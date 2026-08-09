@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment / secrets
+.env
+*.env.local
+
+# Model cache (downloaded on first run, don't commit)
+.cache/
+models/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

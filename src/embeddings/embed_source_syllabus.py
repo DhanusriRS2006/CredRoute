@@ -27,7 +27,7 @@ Usage as a module (real pipeline, once wired up):
     pooled = embed_source_topics(["Deep learning fundamentals...", ...])
 """
 
-from embed_topics import get_embeddings_batch
+from embeddings.embed_topics import get_embeddings_batch
 
 
 def embed_source_topics(topic_texts: list[str]) -> list[dict]:
@@ -46,6 +46,9 @@ def embed_source_topics(topic_texts: list[str]) -> list[dict]:
     """
     if not topic_texts:
         raise ValueError("No source topics provided to embed.")
+
+    if any(not text or not text.strip() for text in topic_texts):
+        raise ValueError("Source topics cannot contain empty text.")
 
     embeddings = get_embeddings_batch(topic_texts)
     return [

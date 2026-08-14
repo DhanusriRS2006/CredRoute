@@ -38,8 +38,12 @@ Usage:
 
 import argparse
 import json
+import os
 
-from embed_topics import get_embeddings_batch, write_embedding_to_db
+
+
+
+from embeddings.embed_topics import get_embeddings_batch
 
 
 # Placeholder data so this script is runnable today, before the real REC
@@ -67,6 +71,29 @@ def load_syllabus(path: str | None) -> list[dict]:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def validate_syllabus(syllabus):
+    if not syllabus:
+        raise ValueError("Syllabus is empty.")
+
+    for course in syllabus:
+        if "course_id" not in course:
+            raise ValueError("Missing course_id.")
+
+        if "topics" not in course or not course["topics"]:
+            raise ValueError(
+                f"No topics found for course_id={course['course_id']}"
+            )
+
+        for topic in course["topics"]:
+            if "unit_no" not in topic:
+                raise ValueError(
+                    f"Missing unit_no for course_id={course['course_id']}"
+                )
+
+            if "text" not in topic or not topic["text"].strip():
+                raise ValueError(
+                    f"Missing topic text for course_id={course['course_id']}"
+                )
 
 def embed_rec_syllabus(syllabus: list[dict], conn=None, dry_run: bool = False) -> list[dict]:
     """
@@ -81,6 +108,8 @@ def embed_rec_syllabus(syllabus: list[dict], conn=None, dry_run: bool = False) -
     Returns:
         Flat list of results: [{course_id, unit_no, text, embedding}, ...]
     """
+    validate_syllabus(syllabus)
+
     results = []
 
     for course in syllabus:
@@ -112,7 +141,10 @@ def embed_rec_syllabus(syllabus: list[dict], conn=None, dry_run: bool = False) -
                         ("[" + ",".join(str(x) for x in embedding) + "]",
                          course_id, topic["unit_no"]),
                     )
-                conn.commit()
+    if not dry_run:
+        conn.commit()
+
+
 
     return results
 
@@ -130,18 +162,32 @@ if __name__ == "__main__":
     conn = None
     if not args.dry_run:
         import psycopg2
-        # TODO: replace with real connection details / env vars once DB is live
-        conn = psycopg2.connect(
-            dbname="transfer_credit_db",
-            user="postgres",
-            password="postgres",
-            host="localhost",
-        )
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            conn = psycopg2.connect(database_url, connect_timeout=10)
+        else:
+            required_env = ("PGDATABASE", "PGUSER", "PGPASSWORD")
+            missing_env = [name for name in required_env if not os.getenv(name)]
+            if missing_env:
+                raise RuntimeError(
+                    "Missing database connection settings: "
+                    + ", ".join(missing_env)
+                    + ". Set DATABASE_URL or the PGDATABASE/PGUSER/PGPASSWORD env vars."
+                )
 
+            conn = psycopg2.connect(
+                dbname=os.environ["PGDATABASE"],
+                user=os.environ["PGUSER"],
+                password=os.environ["PGPASSWORD"],
+                host=os.getenv("PGHOST", "localhost"),
+                port=os.getenv("PGPORT", "5432"),
+                connect_timeout=10,
+            )
     results = embed_rec_syllabus(syllabus, conn=conn, dry_run=args.dry_run)
 
     print(f"\nDone. Embedded {len(results)} topics across "
           f"{len(set(r['course_id'] for r in results))} course(s).")
-    if args.dry_run:
+  
+    if args.dry_run and results:
         print("(dry run — nothing written to DB)")
         print(f"Sample embedding length: {len(results[0]['embedding'])}")

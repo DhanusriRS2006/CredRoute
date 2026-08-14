@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>Evaluation Results</title></head>
+<body style="font-family: sans-serif; max-width: 800px; margin: 40px auto;">
+  <h2>Evaluation Results</h2>
+
+  <form method="get">
+    <label>Acceptance threshold: <span id="thresh-val">{{ threshold }}</span>%</label><br>
+    <input type="range" name="threshold" min="50" max="100" value="{{ threshold }}"
+           oninput="document.getElementById('thresh-val').textContent = this.value"
+           onchange="this.form.submit()">
+  </form>
+
+  <table style="border-collapse: collapse; width: 100%;">
+    <tr><th>Course</th><th>Coverage %</th><th>Status</th><th>Missing Units</th><th>Reasoning</th></tr>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.course }}</td>
+      <td>{{ r.coverage_pct }}%</td>
+      <td>{{ 'ACCEPT' if r.coverage_pct >= threshold else 'REDO' }}</td>
+      <td>{{ r.missing_units | join(', ') if r.missing_units else '—' }}</td>
+      <td>{{ r.reasoning }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

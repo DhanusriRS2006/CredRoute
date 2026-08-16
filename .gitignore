@@ -1,6 +1,13 @@
 venv/
+<<<<<<< HEAD
 .env
 __pycache__/
 *.pyc
 .pytest_cache/
 .vscode/
+=======
+__pycache__/
+.env
+uploads/
+*.pyc
+>>>>>>> master

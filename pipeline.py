@@ -6,12 +6,14 @@ even before their real implementation lands.
 """
 import psycopg2
 from ocr_parser import parse_transcript, parse_document
+
+
 from eligibility_engine import check_eligibility
 from gpa_engine import compute_weighted_gpa, convert_grade
 
 try:
-    from matching_engine import match_course
-    from reasoning_generator import generate as generate_reasoning
+    from src.matching_engine.matching_engine import match_course
+    from src.reasoning_generator.reasoning_generator import generate as generate_reasoning
 except ImportError:
     # Stub fallback so Person A can test the pipeline shape before Person B's
     # modules exist. Replace by just having matching_engine.py / reasoning_generator.py
